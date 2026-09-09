@@ -55,6 +55,11 @@ header{
 .marca h1{font-size:1.15rem; font-weight:800; margin:0; letter-spacing:.2px;}
 .marca p{margin:0; font-size:.8rem; color:var(--texto-sec);}
 .header-acciones{display:flex; align-items:center; gap:12px;}
+.pill{
+  background:var(--bg-soft); border:1px solid var(--borde); border-radius:30px;
+  padding:8px 16px; font-size:.82rem; color:var(--texto-sec); white-space:nowrap;
+}
+.pill b{color:var(--texto); font-weight:800; margin-right:4px;}
 #actualizado{font-size:.78rem; color:var(--texto-sec);}
 #toggle-tema{
   border:1px solid var(--borde); background:var(--card); color:var(--texto);
@@ -98,17 +103,6 @@ header{
   margin-left:auto; border:none; background:transparent; color:var(--rojo);
   font-size:.82rem; font-weight:600; cursor:pointer;
 }
-
-/* tarjetas de resumen (más chicas que las de Satisfacción) */
-.resumen{
-  display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:12px; margin-bottom:20px;
-}
-.resumen-card{
-  background:var(--card); border:1px solid var(--borde); border-radius:12px;
-  padding:12px 14px; box-shadow:var(--sombra); text-align:center;
-}
-.resumen-card .valor{font-size:1.25rem; font-weight:800; color:var(--acento);}
-.resumen-card .etq{font-size:.68rem; color:var(--texto-sec); font-weight:600; margin-top:2px; text-transform:uppercase; letter-spacing:.3px;}
 
 /* tarjetas de promedio (anillo + barras) */
 .promedios{
@@ -175,14 +169,16 @@ footer{text-align:center; color:var(--texto-sec); font-size:.75rem; padding:26px
       </div>
     </div>
     <div class="header-acciones">
+      <div class="pill" id="pill-total"></div>
+      <div class="pill" id="pill-encuesta"></div>
+      <div class="pill" id="pill-nps"></div>
+      <div class="pill" id="pill-recomienda"></div>
       <span id="actualizado"></span>
       <button id="toggle-tema" title="Cambiar tema">🌙</button>
     </div>
   </header>
 
   <div class="filtros" id="filtros"></div>
-
-  <div class="resumen" id="resumen"></div>
 
   <div class="promedios" id="promedios"></div>
 
@@ -358,6 +354,9 @@ function casosFiltrados(ignorarMes = false){
 }
 
 /* ---------- helpers de cálculo ---------- */
+function soloRespondieron(arr){
+  return arr.filter(c => c.respondio === 'Responde' || c.respondio === 'Parcial');
+}
 function contarPorClave(arr, campo){
   const m = {};
   arr.forEach(c => { const v = c[campo]; if(v){ m[v] = (m[v]||0) + 1; } });
@@ -385,7 +384,7 @@ function distribucion1a5(arr, campo){
 /* ---------- render principal ---------- */
 function renderTodo(){
   const filtrados = casosFiltrados();
-  renderResumen(filtrados);
+  renderPills(filtrados);
   renderPromedios(filtrados);
   renderNps(filtrados);
   renderNpsEvolucion();
@@ -399,7 +398,7 @@ function renderTodo(){
   renderRanking('c-problema', filtrados, 'problema', 12);
 }
 
-function renderResumen(filtrados){
+function renderPills(filtrados){
   const total = filtrados.length;
   const conEncuesta = filtrados.filter(c => c.respondio === 'Responde' || c.respondio === 'Parcial').length;
   const clasificados = filtrados.filter(c => c.recomienda);
@@ -408,19 +407,10 @@ function renderResumen(filtrados){
   const nps = clasificados.length ? Math.round((promotores - detractores) / clasificados.length * 100) : null;
   const pctRecomienda = clasificados.length ? Math.round(promotores / clasificados.length * 100) : null;
 
-  const tarjetas = [
-    {valor: total.toLocaleString('es-AR'), etiqueta:'Casos', color:'var(--rojo)'},
-    {valor: conEncuesta.toLocaleString('es-AR'), etiqueta:'Con encuesta', color:'var(--rojo-2)'},
-    {valor: nps === null ? '—' : nps, etiqueta:'NPS', color:'var(--violeta)'},
-    {valor: pctRecomienda === null ? '—' : pctRecomienda + '%', etiqueta:'Recomienda', color:'var(--verde)'},
-  ];
-
-  document.getElementById('resumen').innerHTML = tarjetas.map(t => `
-    <div class="resumen-card" style="--acento:${t.color}">
-      <div class="valor">${t.valor}</div>
-      <div class="etq">${t.etiqueta}</div>
-    </div>
-  `).join('');
+  document.getElementById('pill-total').innerHTML = `<b>${total.toLocaleString('es-AR')}</b> casos`;
+  document.getElementById('pill-encuesta').innerHTML = `<b>${conEncuesta.toLocaleString('es-AR')}</b> con encuesta`;
+  document.getElementById('pill-nps').innerHTML = `<b>${nps === null ? '—' : nps}</b> NPS`;
+  document.getElementById('pill-recomienda').innerHTML = `<b>${pctRecomienda === null ? '—' : pctRecomienda + '%'}</b> recomienda`;
 }
 
 function renderPromedios(filtrados){
@@ -554,9 +544,10 @@ function renderRespuesta(filtrados){
 }
 
 function renderVehiculo(filtrados){
-  const mapa = contarPorClave(filtrados, 'vehiculo');
+  const base = soloRespondieron(filtrados);
+  const mapa = contarPorClave(base, 'vehiculo');
   const entradas = Object.entries(mapa).sort((a,b)=>b[1]-a[1]);
-  const total = filtrados.length || 1;
+  const total = base.length || 1;
 
   crear('c-vehiculo', {
     type:'doughnut',
@@ -608,9 +599,10 @@ function renderDistribucion(id, filtrados, campo){
 }
 
 function renderRanking(id, filtrados, campo, n){
-  const mapa = contarPorClave(filtrados, campo);
+  const base = soloRespondieron(filtrados);
+  const mapa = contarPorClave(base, campo);
   const entradas = topN(mapa, n);
-  const total = filtrados.filter(c=>c[campo]).length || 1;
+  const total = base.filter(c=>c[campo]).length || 1;
   const data = entradas.map(([,v]) => Math.round(v/total*100));
 
   crear(id, {
