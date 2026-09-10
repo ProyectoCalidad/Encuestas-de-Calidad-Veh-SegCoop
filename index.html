@@ -104,6 +104,25 @@ header{
   font-size:.82rem; font-weight:600; cursor:pointer;
 }
 
+/* tarjetas anchas de NPS + Recomienda */
+.nps-recomienda{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px;
+}
+.nr-card{
+  background:var(--card); border:1px solid var(--borde); border-radius:16px;
+  padding:20px; box-shadow:var(--sombra); text-align:center; position:relative; overflow:hidden;
+}
+.nr-card::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--acento);
+}
+.nr-card .valor{font-size:2rem; font-weight:800; color:var(--acento); line-height:1;}
+.nr-card .etq{font-size:.85rem; color:var(--texto-sec); font-weight:600; margin-top:6px; text-transform:uppercase; letter-spacing:.3px;}
+
+/* leyenda de base de cálculo */
+.nota-base{
+  margin:0 0 10px; font-size:.72rem; color:var(--texto-sec); font-style:italic;
+}
+
 /* tarjetas de promedio (anillo + barras) */
 .promedios{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin-bottom:20px;
@@ -171,8 +190,6 @@ footer{text-align:center; color:var(--texto-sec); font-size:.75rem; padding:26px
     <div class="header-acciones">
       <div class="pill" id="pill-total"></div>
       <div class="pill" id="pill-encuesta"></div>
-      <div class="pill" id="pill-nps"></div>
-      <div class="pill" id="pill-recomienda"></div>
       <span id="actualizado"></span>
       <button id="toggle-tema" title="Cambiar tema">🌙</button>
     </div>
@@ -180,24 +197,26 @@ footer{text-align:center; color:var(--texto-sec); font-size:.75rem; padding:26px
 
   <div class="filtros" id="filtros"></div>
 
+  <div class="nps-recomienda" id="nps-recomienda"></div>
+
   <div class="promedios" id="promedios"></div>
 
   <div class="grid">
-    <div class="tarjeta"><h3>NPS</h3><div class="chart-box"><canvas id="c-nps"></canvas></div></div>
-    <div class="tarjeta"><h3>Evolución de NPS mensual</h3><div class="chart-box"><canvas id="c-nps-evol"></canvas></div></div>
+    <div class="tarjeta"><h3>NPS</h3><p class="nota-base">Base: Encuesta Completa + Parcial</p><div class="chart-box"><canvas id="c-nps"></canvas></div></div>
+    <div class="tarjeta"><h3>Evolución de NPS mensual</h3><p class="nota-base">Base: Encuesta Completa + Parcial</p><div class="chart-box"><canvas id="c-nps-evol"></canvas></div></div>
 
     <div class="tarjeta"><h3>Nivel de Respuesta</h3><div class="chart-box"><canvas id="c-respuesta"></canvas></div></div>
-    <div class="tarjeta"><h3>Tipo de Vehículo</h3><div class="chart-box"><canvas id="c-vehiculo"></canvas></div></div>
+    <div class="tarjeta"><h3>Tipo de Vehículo</h3><p class="nota-base">Base: Encuesta Completa + Parcial</p><div class="chart-box"><canvas id="c-vehiculo"></canvas></div></div>
 
-    <div class="tarjeta"><h3>Calidad de Atención</h3><div class="chart-box"><canvas id="c-atencion"></canvas></div></div>
-    <div class="tarjeta"><h3>Demora del Servicio</h3><div class="chart-box"><canvas id="c-demora"></canvas></div></div>
+    <div class="tarjeta"><h3>Calidad de Atención</h3><p class="nota-base">Base: Encuesta Completa + Parcial</p><div class="chart-box"><canvas id="c-atencion"></canvas></div></div>
+    <div class="tarjeta"><h3>Demora del Servicio</h3><p class="nota-base">Base: Encuesta Completa + Parcial</p><div class="chart-box"><canvas id="c-demora"></canvas></div></div>
 
-    <div class="tarjeta full"><h3>Trabajo del Prestador</h3><div class="chart-box"><canvas id="c-prestador"></canvas></div></div>
+    <div class="tarjeta full"><h3>Trabajo del Prestador</h3><p class="nota-base">Base: Encuesta Completa + Parcial</p><div class="chart-box"><canvas id="c-prestador"></canvas></div></div>
 
-    <div class="tarjeta"><h3>Ranking por Tipo de Servicio</h3><div class="chart-box alto"><canvas id="c-servicio"></canvas></div></div>
-    <div class="tarjeta"><h3>Ranking por Provincia</h3><div class="chart-box alto"><canvas id="c-provincia"></canvas></div></div>
+    <div class="tarjeta"><h3>Ranking por Tipo de Servicio</h3><p class="nota-base">Base: Encuesta Completa + Parcial</p><div class="chart-box alto"><canvas id="c-servicio"></canvas></div></div>
+    <div class="tarjeta"><h3>Ranking por Provincia</h3><p class="nota-base">Base: Encuesta Completa + Parcial</p><div class="chart-box alto"><canvas id="c-provincia"></canvas></div></div>
 
-    <div class="tarjeta full"><h3>Ranking por Problema</h3><div class="chart-box alto"><canvas id="c-problema"></canvas></div></div>
+    <div class="tarjeta full"><h3>Ranking por Problema</h3><p class="nota-base">Base: Encuesta Completa + Parcial</p><div class="chart-box alto"><canvas id="c-problema"></canvas></div></div>
   </div>
 
   <footer>Panel Segurcoop · datos actualizados manualmente mes a mes</footer>
@@ -355,7 +374,7 @@ function casosFiltrados(ignorarMes = false){
 
 /* ---------- helpers de cálculo ---------- */
 function soloRespondieron(arr){
-  return arr.filter(c => c.respondio === 'Responde' || c.respondio === 'Parcial');
+  return arr.filter(c => c.respondio === 'Encuesta Completa' || c.respondio === 'Encuesta Parcial');
 }
 function contarPorClave(arr, campo){
   const m = {};
@@ -385,6 +404,7 @@ function distribucion1a5(arr, campo){
 function renderTodo(){
   const filtrados = casosFiltrados();
   renderPills(filtrados);
+  renderNpsRecomienda(filtrados);
   renderPromedios(filtrados);
   renderNps(filtrados);
   renderNpsEvolucion();
@@ -400,17 +420,29 @@ function renderTodo(){
 
 function renderPills(filtrados){
   const total = filtrados.length;
-  const conEncuesta = filtrados.filter(c => c.respondio === 'Responde' || c.respondio === 'Parcial').length;
+  const conEncuesta = filtrados.filter(c => c.respondio === 'Encuesta Completa' || c.respondio === 'Encuesta Parcial').length;
+  document.getElementById('pill-total').innerHTML = `<b>${total.toLocaleString('es-AR')}</b> casos`;
+  document.getElementById('pill-encuesta').innerHTML = `<b>${conEncuesta.toLocaleString('es-AR')}</b> con encuesta`;
+}
+
+function renderNpsRecomienda(filtrados){
   const clasificados = filtrados.filter(c => c.recomienda);
   const promotores = clasificados.filter(c => c.recomienda === 'Recomienda').length;
   const detractores = clasificados.filter(c => c.recomienda === 'No Recomienda').length;
-  const nps = clasificados.length ? Math.round((promotores - detractores) / clasificados.length * 100) : null;
-  const pctRecomienda = clasificados.length ? Math.round(promotores / clasificados.length * 100) : null;
+  const nps = clasificados.length ? (((promotores - detractores) / clasificados.length) * 100).toFixed(2) : null;
+  const pctRecomienda = clasificados.length ? ((promotores / clasificados.length) * 100).toFixed(2) : null;
 
-  document.getElementById('pill-total').innerHTML = `<b>${total.toLocaleString('es-AR')}</b> casos`;
-  document.getElementById('pill-encuesta').innerHTML = `<b>${conEncuesta.toLocaleString('es-AR')}</b> con encuesta`;
-  document.getElementById('pill-nps').innerHTML = `<b>${nps === null ? '—' : nps}</b> NPS`;
-  document.getElementById('pill-recomienda').innerHTML = `<b>${pctRecomienda === null ? '—' : pctRecomienda + '%'}</b> recomienda`;
+  const tarjetas = [
+    {valor: nps === null ? '—' : nps, etiqueta:'NPS', color:'var(--violeta)'},
+    {valor: pctRecomienda === null ? '—' : pctRecomienda + '%', etiqueta:'Recomienda', color:'var(--azul)'},
+  ];
+
+  document.getElementById('nps-recomienda').innerHTML = tarjetas.map(t => `
+    <div class="nr-card" style="--acento:${t.color}">
+      <div class="valor">${t.valor}</div>
+      <div class="etq">${t.etiqueta}</div>
+    </div>
+  `).join('');
 }
 
 function renderPromedios(filtrados){
@@ -423,11 +455,10 @@ function renderPromedios(filtrados){
   document.getElementById('promedios').innerHTML = campos.map(({campo, titulo, color}) => {
     const {conteo, total} = distribucion1a5(filtrados, campo);
     const prom = promedio(filtrados, campo);
-    const pct = prom === null ? 0 : Math.round(prom / 5 * 100);
+    const pct = prom === null ? 0 : ((prom / 5) * 100).toFixed(2);
 
-    const filas = [1,2,3,4,5]
-      .map(n => ({ n, pct: total ? Math.round(conteo[n] / total * 100) : 0 }))
-      .sort((a, b) => b.pct - a.pct)
+    const filas = [5,4,3,2,1]
+      .map(n => ({ n, pct: total ? ((conteo[n] / total) * 100).toFixed(2) : '0.00' }))
       .map(f => `
         <div class="prom-fila">
           <span class="etq">${ETIQUETA_SATISFACCION[f.n]}</span>
@@ -437,6 +468,7 @@ function renderPromedios(filtrados){
 
     return `
       <div class="prom-card" style="--acento:${color}">
+        <p class="nota-base">Base: Encuesta Completa + Parcial</p>
         <div class="prom-top">
           <div class="prom-anillo" style="--pct:${pct}"><span>${pct}%</span></div>
           <div>
@@ -463,15 +495,14 @@ function colorGrilla(){ return esOscuro() ? 'rgba(255,255,255,.06)' : 'rgba(0,0,
 function renderNps(filtrados){
   const clasificados = filtrados.filter(c => c.recomienda);
   const promotores = clasificados.filter(c => c.recomienda === 'Recomienda').length;
-  const neutrales = clasificados.filter(c => c.recomienda === 'Neutral').length;
   const detractores = clasificados.filter(c => c.recomienda === 'No Recomienda').length;
   const total = clasificados.length || 1;
 
   crear('c-nps', {
     type:'doughnut',
     data:{
-      labels:['Promotores','Neutrales','Detractores'],
-      datasets:[{data:[promotores,neutrales,detractores], backgroundColor:['#1C9A5D','#E7A72A','#E20000'], borderWidth:0}]
+      labels:['Promotores','Detractores'],
+      datasets:[{data:[promotores,detractores], backgroundColor:['#1C9A5D','#E20000'], borderWidth:0}]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
@@ -479,9 +510,9 @@ function renderNps(filtrados){
         legend:{position:'bottom', labels:{color:colorEjes()}},
         datalabels:{
           color:'#fff', font:{weight:'700', size:12},
-          formatter:(v)=> total ? Math.round(v/total*100)+'%' : '0%'
+          formatter:(v)=> total ? ((v/total)*100).toFixed(2)+'%' : '0.00%'
         },
-        tooltip:{callbacks:{label:(ctx)=> `${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/total*100)}%)`}}
+        tooltip:{enabled:false}
       }
     }
   });
@@ -493,7 +524,7 @@ function renderNpsEvolucion(){
     const del = base.filter(c => c.mes === m && c.recomienda);
     const prom = del.filter(c => c.recomienda === 'Recomienda').length;
     const det = del.filter(c => c.recomienda === 'No Recomienda').length;
-    return del.length ? Math.round((prom-det)/del.length*100) : null;
+    return del.length ? Number((((prom-det)/del.length)*100).toFixed(2)) : null;
   });
 
   crear('c-nps-evol', {
@@ -509,9 +540,10 @@ function renderNpsEvolucion(){
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{display:false},
+        tooltip:{enabled:false},
         datalabels:{
           align:'top', color: esOscuro() ? '#edeff2':'#1c1e21', font:{weight:'700'},
-          formatter:(v)=> v===null?'':v
+          formatter:(v)=> v===null?'':v.toFixed(2)
         }
       },
       scales:{
@@ -523,7 +555,7 @@ function renderNpsEvolucion(){
 }
 
 function renderRespuesta(filtrados){
-  const conteo = {'Responde':0,'Parcial':0,'No Responde':0};
+  const conteo = {'Encuesta Completa':0,'Encuesta Parcial':0,'Encuesta No Respondida':0};
   filtrados.forEach(c => { if(c.respondio && conteo[c.respondio] !== undefined) conteo[c.respondio]++; });
   const total = filtrados.length || 1;
 
@@ -537,7 +569,8 @@ function renderRespuesta(filtrados){
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{position:'bottom', labels:{color:colorEjes()}},
-        datalabels:{color:'#fff', font:{weight:'700'}, formatter:(v)=>Math.round(v/total*100)+'%'}
+        tooltip:{enabled:false},
+        datalabels:{color:'#fff', font:{weight:'700'}, formatter:(v)=>((v/total)*100).toFixed(2)+'%'}
       }
     }
   });
@@ -559,7 +592,8 @@ function renderVehiculo(filtrados){
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{position:'bottom', labels:{color:colorEjes(), boxWidth:12, font:{size:11}}},
-        datalabels:{color:'#fff', font:{weight:'700', size:11}, formatter:(v)=>Math.round(v/total*100)+'%'}
+        tooltip:{enabled:false},
+        datalabels:{color:'#fff', font:{weight:'700', size:11}, formatter:(v)=>((v/total)*100).toFixed(2)+'%'}
       }
     }
   });
@@ -568,17 +602,17 @@ function renderVehiculo(filtrados){
 const ETIQUETA_SATISFACCION = {1:'Insatisfecho', 2:'Poco satisfecho', 3:'Neutral', 4:'Satisfecho', 5:'Muy satisfecho'};
 
 const ESCALA_SATISFACCION = [
-  ['1','Insatisfecho'],
-  ['2','Poco satisfecho'],
-  ['3','Neutral'],
-  ['4','Satisfecho'],
   ['5','Muy satisfecho'],
+  ['4','Satisfecho'],
+  ['3','Neutral'],
+  ['2','Poco satisfecho'],
+  ['1','Insatisfecho'],
 ];
 
 function renderDistribucion(id, filtrados, campo){
   const {conteo, total} = distribucion1a5(filtrados, campo);
   const labels = ESCALA_SATISFACCION;
-  const data = ['1','2','3','4','5'].map(l => total ? Math.round(conteo[l]/total*100) : 0);
+  const data = ['5','4','3','2','1'].map(l => total ? Number(((conteo[l]/total)*100).toFixed(2)) : 0);
 
   crear(id, {
     type:'bar',
@@ -588,7 +622,8 @@ function renderDistribucion(id, filtrados, campo){
       layout:{padding:{top:26}},
       plugins:{
         legend:{display:false},
-        datalabels:{anchor:'end', align:'top', clamp:true, clip:false, color: esOscuro()?'#edeff2':'#1c1e21', font:{weight:'700'}, formatter:v=>v+'%'}
+        tooltip:{enabled:false},
+        datalabels:{anchor:'end', align:'top', clamp:true, clip:false, color: esOscuro()?'#edeff2':'#1c1e21', font:{weight:'700'}, formatter:v=>v.toFixed(2)+'%'}
       },
       scales:{
         y:{beginAtZero:true, max:100, ticks:{color:colorEjes(), callback:v=>v+'%'}, grid:{color:colorGrilla()}},
@@ -603,7 +638,7 @@ function renderRanking(id, filtrados, campo, n){
   const mapa = contarPorClave(base, campo);
   const entradas = topN(mapa, n);
   const total = base.filter(c=>c[campo]).length || 1;
-  const data = entradas.map(([,v]) => Math.round(v/total*100));
+  const data = entradas.map(([,v]) => Number(((v/total)*100).toFixed(2)));
 
   crear(id, {
     type:'bar',
@@ -617,7 +652,8 @@ function renderRanking(id, filtrados, campo, n){
       layout:{padding:{right:38}},
       plugins:{
         legend:{display:false},
-        datalabels:{anchor:'end', align:'end', clamp:true, clip:false, color: esOscuro()?'#edeff2':'#1c1e21', font:{weight:'700', size:11}, formatter:v=>v+'%'}
+        tooltip:{enabled:false},
+        datalabels:{anchor:'end', align:'end', clamp:true, clip:false, color: esOscuro()?'#edeff2':'#1c1e21', font:{weight:'700', size:11}, formatter:v=>v.toFixed(2)+'%'}
       },
       scales:{
         x:{beginAtZero:true, max:100, ticks:{color:colorEjes(), callback:v=>v+'%'}, grid:{color:colorGrilla()}},

@@ -23,6 +23,35 @@ SHEET_NAME = "Acumulado"
 # "No", "Gracias") en vez del número — se descartan y quedan como nulos.
 SCORE_COLS = ["ATENCION", "DEMORA", "PRESTADOR"]
 
+# Mapeo robusto: reconoce tanto los nombres viejos como los nuevos, sin importar
+# mayúsculas/tildes, y siempre normaliza a las 3 etiquetas oficiales actuales.
+RESPONDIO_MAP = {
+    "RESPONDIÓ": "Encuesta Completa",
+    "RESPONDIO": "Encuesta Completa",
+    "ENCUESTA COMPLETA": "Encuesta Completa",
+    "PARCIAL": "Encuesta Parcial",
+    "ENCUESTA PARCIAL": "Encuesta Parcial",
+    "NO RESPONDIÓ": "Encuesta No Respondida",
+    "NO RESPONDIO": "Encuesta No Respondida",
+    "ENCUESTA NO RESPONDIDA": "Encuesta No Respondida",
+}
+
+# "Neutral" ya no se usa: la pregunta de recomendación es binaria (Recomienda /
+# No Recomienda). Si un caso no contestó esa pregunta puntual, queda sin
+# clasificar (None), no se fuerza a "Neutral".
+RECOMIENDA_MAP = {
+    "RECOMIENDA": "Recomienda",
+    "NO RECOMIENDA": "No Recomienda",
+    "NEUTRAL": None,
+}
+
+
+def normalizar(mapa, valor_crudo):
+    if valor_crudo is None:
+        return None
+    clave = str(valor_crudo).strip().upper()
+    return mapa.get(clave, valor_crudo)  # si no matchea nada conocido, se deja tal cual
+
 
 def to_score(value):
     if pd.isna(value):
@@ -45,6 +74,8 @@ def build(input_path: Path, output_path: Path):
 
     casos = []
     for _, row in df.iterrows():
+        respondio_raw = row.get("RESPONDIO?") if pd.notna(row.get("RESPONDIO?")) else None
+        recomienda_raw = row.get("Recomienda Ok") if pd.notna(row.get("Recomienda Ok")) else None
         casos.append({
             "mes": to_month_key(row.get("Mes")),
             "provincia": (row.get("Provincia") or None) if pd.notna(row.get("Provincia")) else None,
@@ -54,8 +85,8 @@ def build(input_path: Path, output_path: Path):
             "atencion": to_score(row.get("ATENCION")),
             "demora": to_score(row.get("DEMORA")),
             "prestador": to_score(row.get("PRESTADOR")),
-            "recomienda": row.get("Recomienda Ok") if pd.notna(row.get("Recomienda Ok")) else None,
-            "respondio": row.get("RESPONDIO?") if pd.notna(row.get("RESPONDIO?")) else None,
+            "recomienda": normalizar(RECOMIENDA_MAP, recomienda_raw),
+            "respondio": normalizar(RESPONDIO_MAP, respondio_raw),
         })
 
     meses = sorted({c["mes"] for c in casos if c["mes"]})

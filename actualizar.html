@@ -93,6 +93,21 @@ function limpio(v) {
   return s === '' ? null : s;
 }
 
+const RESPONDIO_MAP = {
+  'RESPONDIÓ':'Encuesta Completa', 'RESPONDIO':'Encuesta Completa', 'ENCUESTA COMPLETA':'Encuesta Completa',
+  'PARCIAL':'Encuesta Parcial', 'ENCUESTA PARCIAL':'Encuesta Parcial',
+  'NO RESPONDIÓ':'Encuesta No Respondida', 'NO RESPONDIO':'Encuesta No Respondida', 'ENCUESTA NO RESPONDIDA':'Encuesta No Respondida',
+};
+// "Neutral" ya no se usa: la pregunta de recomendación es binaria. Si no la
+// contestó, queda sin clasificar (null), no se fuerza a "Neutral".
+const RECOMIENDA_MAP = { 'RECOMIENDA':'Recomienda', 'NO RECOMIENDA':'No Recomienda', 'NEUTRAL': null };
+
+function normalizar(mapa, valorCrudo) {
+  if (valorCrudo === null || valorCrudo === undefined) return null;
+  const clave = String(valorCrudo).trim().toUpperCase();
+  return (clave in mapa) ? mapa[clave] : valorCrudo;
+}
+
 function procesar(archivo) {
   estado.innerHTML = 'Procesando…';
   const reader = new FileReader();
@@ -114,8 +129,8 @@ function procesar(archivo) {
           atencion: aPuntaje(f['ATENCION']),
           demora: aPuntaje(f['DEMORA']),
           prestador: aPuntaje(f['PRESTADOR']),
-          recomienda: limpio(f['Recomienda Ok']),
-          respondio: limpio(f['RESPONDIO?']),
+          recomienda: normalizar(RECOMIENDA_MAP, limpio(f['Recomienda Ok'])),
+          respondio: normalizar(RESPONDIO_MAP, limpio(f['RESPONDIO?'])),
         };
       }).filter(c => c.mes); // descarta filas totalmente vacías
 
