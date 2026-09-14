@@ -239,7 +239,7 @@ function aplicarTema(t){
 aplicarTema(localStorage.getItem('segurcoop-tema') || 'dark');
 btnTema.addEventListener('click', () => {
   aplicarTema(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-  Object.values(graficos).forEach(g => g && g.update());
+  renderTodo();
 });
 
 /* ---------- estado ---------- */
