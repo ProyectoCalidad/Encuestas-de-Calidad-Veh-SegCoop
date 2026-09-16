@@ -93,6 +93,49 @@ function limpio(v) {
   return s === '' ? null : s;
 }
 
+function aFechaDDMMYYYY(v) {
+  let d = null;
+  if (v instanceof Date) d = v;
+  else if (typeof v === 'number') { const p = XLSX.SSF.parse_date_code(v); if (p) d = new Date(p.y, p.m - 1, p.d); }
+  if (!d || isNaN(d.getTime())) return '';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+function aRecomendacion(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = Number(v);
+  if (n === 1) return 'Promotor';
+  if (n === 2) return 'Detractor';
+  return '';
+}
+
+function construirDetalle(filas) {
+  return filas.map(f => ({
+    'Orden de Servicio': limpio(f['IdOrdenDeServicio']) ?? '',
+    'N° de Póliza': limpio(f['NroPoliza']) ?? '',
+    'Asegurado': limpio(f['Asegurado']) ?? '',
+    'Patente': limpio(f['Patente']) ?? '',
+    'Fecha de Servicio': aFechaDDMMYYYY(f['FechaDeServicioPrestado']),
+    'Fecha de Encuesta': aFechaDDMMYYYY(f['FechaDeEncuesta']),
+    'Estado de Encuesta': normalizar(RESPONDIO_MAP, limpio(f['RESPONDIO?'])) ?? '',
+    'Atención': f['ATENCION'] ?? '',
+    'Demora': f['DEMORA'] ?? '',
+    'Prestador': f['PRESTADOR'] ?? '',
+    'Recomendación': aRecomendacion(f['RECOMENDAS?']),
+  }));
+}
+
+function descargarDetalleXlsx(detalle) {
+  const hoja = XLSX.utils.json_to_sheet(detalle);
+  const libro = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(libro, hoja, 'Detalle');
+  const buffer = XLSX.write(libro, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  return URL.createObjectURL(blob);
+}
+
 const RESPONDIO_MAP = {
   'RESPONDIÓ':'Encuesta Completa', 'RESPONDIO':'Encuesta Completa', 'ENCUESTA COMPLETA':'Encuesta Completa',
   'PARCIAL':'Encuesta Parcial', 'ENCUESTA PARCIAL':'Encuesta Parcial',
@@ -145,10 +188,15 @@ function procesar(archivo) {
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
 
+      const detalle = construirDetalle(filas);
+      const urlDetalle = descargarDetalleXlsx(detalle);
+
       estado.innerHTML =
         `<span class="ok">Listo ✔</span><br>${casos.length} casos procesados · meses: ${meses.join(', ')}<br>` +
         `<a class="descarga" href="${url}" download="data.json">Descargar data.json</a>` +
-        `<p style="margin-top:14px;">Reemplazá el archivo <code>data.json</code> del repositorio por este y subilo a GitHub (Add file → Upload files → Commit).</p>`;
+        `<p style="margin-top:14px;">Reemplazá el archivo <code>data.json</code> del repositorio por este y subilo a GitHub (Add file → Upload files → Commit).</p>` +
+        `<a class="descarga" style="background:#005A96;" href="${urlDetalle}" download="Detalle-Segurcoop.xlsx">Descargar Detalle.xlsx (para el cliente)</a>` +
+        `<p style="margin-top:14px;">Este es el reporte con el detalle de cada caso (incluye Asegurado y Patente) para mandarle a Segurcoop — no se sube a GitHub, es solo para vos.</p>`;
     } catch (err) {
       estado.innerHTML = `<span class="err">Hubo un error procesando el archivo.</span><br>${err.message}`;
     }
