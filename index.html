@@ -259,20 +259,30 @@ function nombreMes(ym){
 }
 
 /* ---------- carga de datos ---------- */
-fetch('data.json?_=' + Date.now())
-  .then(r => r.json())
-  .then(data => {
-    CASOS = data.casos;
-    MESES = data.meses.slice().sort();
-    document.getElementById('actualizado').textContent = data.generadoEl ? `Actualizado: ${data.generadoEl}` : '';
-    construirFiltros();
-    renderTodo();
-  })
-  .catch(err => {
-    document.getElementById('kpis').innerHTML =
-      `<div style="grid-column:1/-1;color:#c0392b;padding:20px;">No se pudo cargar data.json. Verificá que el archivo esté en la misma carpeta que index.html.</div>`;
-    console.error(err);
-  });
+function iniciarConDatos(data){
+  CASOS = data.casos;
+  MESES = data.meses.slice().sort();
+  document.getElementById('actualizado').textContent = data.generadoEl ? `Actualizado: ${data.generadoEl}` : '';
+  construirFiltros();
+  renderTodo();
+}
+
+if (window.__DATOS_SEGURCOOP__) {
+  // Versión standalone: los datos ya vienen incrustados en este mismo archivo.
+  // Se difiere con setTimeout para que corra después de que termine de
+  // ejecutarse el resto del script (mismo orden que tendría un fetch real).
+  setTimeout(() => iniciarConDatos(window.__DATOS_SEGURCOOP__), 0);
+} else {
+  // Versión web: lee data.json de la misma carpeta.
+  fetch('data.json?_=' + Date.now())
+    .then(r => r.json())
+    .then(iniciarConDatos)
+    .catch(err => {
+      document.getElementById('resumen').innerHTML =
+        `<div style="grid-column:1/-1;color:#c0392b;padding:20px;">No se pudo cargar data.json. Verificá que el archivo esté en la misma carpeta que index.html.</div>`;
+      console.error(err);
+    });
+}
 
 /* ---------- filtros (segmentadores) ---------- */
 function valoresUnicos(campo){
