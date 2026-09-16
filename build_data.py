@@ -56,9 +56,12 @@ def normalizar(mapa, valor_crudo):
 def to_score(value):
     if pd.isna(value):
         return None
-    s = str(value).strip()
-    if re.fullmatch(r"[1-5]", s):
-        return int(s)
+    try:
+        f = float(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+    if f.is_integer() and 1 <= int(f) <= 5:
+        return int(f)
     return None
 
 

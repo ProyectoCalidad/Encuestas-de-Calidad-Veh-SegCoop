@@ -120,9 +120,9 @@ function construirDetalle(filas) {
     'Fecha de Servicio': aFechaDDMMYYYY(f['FechaDeServicioPrestado']),
     'Fecha de Encuesta': aFechaDDMMYYYY(f['FechaDeEncuesta']),
     'Estado de Encuesta': normalizar(RESPONDIO_MAP, limpio(f['RESPONDIO?'])) ?? '',
-    'Atención': f['ATENCION'] ?? '',
-    'Demora': f['DEMORA'] ?? '',
-    'Prestador': f['PRESTADOR'] ?? '',
+    'Atención': aPuntaje(f['ATENCION']) ?? '',
+    'Demora': aPuntaje(f['DEMORA']) ?? '',
+    'Prestador': aPuntaje(f['PRESTADOR']) ?? '',
     'Recomendación': aRecomendacion(f['RECOMENDAS?']),
   }));
 }
